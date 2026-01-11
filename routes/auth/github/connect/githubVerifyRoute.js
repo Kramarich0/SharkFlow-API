@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { emailConfirmValidate } from '#utils/validators/emailConfirmValidate.js';
 import { validateMiddleware } from '#middlewares/http/validateMiddleware.js';
 import { authenticateMiddleware } from '#middlewares/http/authenticateMiddleware.js';
@@ -17,8 +18,16 @@ import {
 
 const router = Router();
 
+const githubConfirmConnectLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs for this endpoint
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post(
   '/auth/oauth/github/confirm-connect',
+  githubConfirmConnectLimiter,
   authenticateMiddleware,
   validateMiddleware(emailConfirmValidate),
   async (req, res) => {
