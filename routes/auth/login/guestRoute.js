@@ -20,10 +20,21 @@ import {
   logSuspiciousAuthActivity,
   logGuestLoginAttempt,
 } from '#utils/loggers/authLoggers.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-router.post('/auth/guest-login', async (req, res) => {
+const guestLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 guest login requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Слишком много попыток гостевого входа. Попробуйте позже.',
+  },
+});
+
+router.post('/auth/guest-login', guestLoginLimiter, async (req, res) => {
   const { ipAddress, userAgent } = getRequestInfo(req);
 
   // Логгируем попытку гостевого входа
