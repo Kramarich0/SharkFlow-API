@@ -21,6 +21,16 @@ import {
   logYandexOAuthFailure,
 } from '#utils/loggers/authLoggers.js';
 
+function isCloudinaryUrl(avatarUrl) {
+  if (!avatarUrl) return false;
+  try {
+    const parsed = new URL(avatarUrl);
+    return parsed.hostname === 'res.cloudinary.com';
+  } catch {
+    return false;
+  }
+}
+
 const router = Router();
 
 const yandexOAuthLimiter = rateLimit({
@@ -159,7 +169,7 @@ router.post('/auth/oauth/yandex', yandexOAuthLimiter, async (req, res) => {
 
     if (avatarUrl) {
       const hasAvatar = Boolean(user.avatarUrl);
-      const isCloudinary = user.avatarUrl?.includes('res.cloudinary.com');
+      const isCloudinary = isCloudinaryUrl(user.avatarUrl);
       if (!hasAvatar || !isCloudinary) {
         await uploadAvatarAndUpdateUser(
           user.id,
