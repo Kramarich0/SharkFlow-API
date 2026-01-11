@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 
 import prisma from '#utils/prismaConfig/prismaClient.js';
 import { findUserByUuidOrThrow } from '#utils/helpers/userHelpers.js';
@@ -13,7 +14,14 @@ import { getRequestInfo } from '#utils/helpers/authHelpers.js';
 
 const router = Router();
 
-router.post('/auth/restore/verify/totp', async (req, res) => {
+const restoreTotpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/auth/restore/verify/totp', restoreTotpLimiter, async (req, res) => {
   const { totpCode, restoreKey } = req.body;
   const { ipAddress, userAgent } = getRequestInfo(req);
 
