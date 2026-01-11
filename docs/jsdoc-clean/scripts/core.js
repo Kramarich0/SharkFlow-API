@@ -324,29 +324,50 @@ function hideTocOnSourcePage() {
 }
 
 function getPreTopBar(id, lang = '') {
+    // create top bar container
+    var topBarContainer = document.createElement('div');
+    topBarContainer.className = 'pre-top-bar-container';
+
+    // language name container
+    var langNameContainer = document.createElement('div');
+    langNameContainer.className = 'code-lang-name-container';
+
+    var langName = document.createElement('div');
+    langName.className = 'code-lang-name';
+    // ensure the language name is treated as text, not HTML
+    langName.textContent = (lang || '').toLocaleUpperCase();
+
+    langNameContainer.appendChild(langName);
+
     // tooltip
-    var tooltip = '<div class="tooltip" id="tooltip-' + id + '">Copied!</div>';
+    var tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    tooltip.id = 'tooltip-' + id;
+    tooltip.textContent = 'Copied!';
 
-    // template of copy to clipboard icon container
-    var copyToClipboard =
-        '<button aria-label="copy code" class="icon-button copy-code" onclick="copyFunction(\'' +
-        id +
-        '\')"><svg class="sm-icon" alt="click to copy"><use xlink:href="#copy-icon"></use></svg>' +
-        tooltip +
-        '</button>';
+    // copy to clipboard button
+    var copyButton = document.createElement('button');
+    copyButton.setAttribute('aria-label', 'copy code');
+    copyButton.className = 'icon-button copy-code';
+    copyButton.setAttribute('onclick', "copyFunction('" + id + "')");
 
-    var langNameDiv =
-        '<div class="code-lang-name-container"><div class="code-lang-name">' +
-        lang.toLocaleUpperCase() +
-        '</div></div>';
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'sm-icon');
+    svg.setAttribute('alt', 'click to copy');
 
-    var topBar =
-        '<div class="pre-top-bar-container">' +
-        langNameDiv +
-        copyToClipboard +
-        '</div>';
+    var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#copy-icon');
 
-    return topBar;
+    svg.appendChild(use);
+
+    copyButton.appendChild(svg);
+    copyButton.appendChild(tooltip);
+
+    // assemble top bar
+    topBarContainer.appendChild(langNameContainer);
+    topBarContainer.appendChild(copyButton);
+
+    return topBarContainer;
 }
 
 function getPreDiv() {
@@ -387,9 +408,9 @@ function processAllPre() {
         var id = 'ScDloZOMdL' + idx;
 
         var lang = pre.getAttribute('data-lang') || 'code';
-        var topBar = getPreTopBar(id, lang);
+        var topBarElement = getPreTopBar(id, lang);
 
-        div.innerHTML = topBar;
+        div.appendChild(topBarElement);
 
         pre.style.maxHeight = preMaxHeight + 'px';
         pre.id = id;
