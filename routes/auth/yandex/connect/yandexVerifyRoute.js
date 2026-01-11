@@ -15,10 +15,18 @@ import {
   logYandexOAuthConfirmFailure,
 } from '#utils/loggers/authLoggers.js';
 
+const rateLimit = require('express-rate-limit');
+
 const router = Router();
+
+const yandexConnectConfirmLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs for this endpoint
+});
 
 router.post(
   '/auth/oauth/yandex/confirm-connect',
+  yandexConnectConfirmLimiter,
   authenticateMiddleware,
   validateMiddleware(emailConfirmValidate),
   async (req, res) => {
