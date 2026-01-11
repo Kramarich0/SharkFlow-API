@@ -46,7 +46,7 @@ router.get(
       .digest('hex');
 
     logCloudinarySignatureSuccess(userUuid, ip);
-    console.info(`Подпись: ${api_key} ${timestamp} ${signature}`);
+    console.info(`Подпись для пользователя ${userUuid} успешно создана, timestamp: ${timestamp}`);
 
     return res.json({
       api_key,
