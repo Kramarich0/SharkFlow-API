@@ -12,12 +12,25 @@ import {
   logGoogleOAuthDisableSuccess,
   logGoogleOAuthDisableFailure,
 } from '#utils/loggers/authLoggers.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
+
+const googleDisableRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 disable attempts per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error:
+      'Слишком много попыток отвязки Google. Пожалуйста, попробуйте снова позже.',
+  },
+});
 
 router.post(
   '/auth/oauth/google/disable',
   authenticateMiddleware,
+  googleDisableRateLimiter,
   validateMiddleware(emailConfirmValidate),
   async (req, res) => {
     const { ipAddress, userAgent } = getRequestInfo(req);
