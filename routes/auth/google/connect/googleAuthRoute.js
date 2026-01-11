@@ -21,6 +21,7 @@ import {
   logGoogleOAuthSuccess,
   logGoogleOAuthFailure,
 } from '#utils/loggers/authLoggers.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
@@ -30,7 +31,17 @@ const oauth2Client = new OAuth2Client(
   'postmessage',
 );
 
-router.post('/auth/oauth/google', async (req, res) => {
+const googleOAuthRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 Google OAuth requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Слишком много попыток входа через Google с этого IP. Попробуйте позже.',
+  },
+});
+
+router.post('/auth/oauth/google', googleOAuthRateLimiter, async (req, res) => {
   const { ipAddress, userAgent } = getRequestInfo(req);
   const { code, captchaToken } = req.body;
   const guestUuid = req.cookies[GUEST_COOKIE_NAME];
