@@ -30,11 +30,20 @@ import {
   getGeoLocation,
   validateDeviceId,
 } from '#utils/helpers/deviceSessionHelper.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
+const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post(
   '/auth/login',
+  loginRateLimiter,
   validateMiddleware(loginValidate),
   async (req, res) => {
     const { ipAddress, userAgent } = getRequestInfo(req);
