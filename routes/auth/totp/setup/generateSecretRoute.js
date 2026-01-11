@@ -8,10 +8,21 @@ import { handleRouteError } from '#utils/handlers/handleRouteError.js';
 import { validateAndDeleteConfirmationCode } from '#utils/helpers/confirmationHelpers.js';
 import { createOtpAuthUrl } from '#utils/helpers/totpHelpers.js';
 import { getUserTempData, setUserTempData } from '#store/userTempData.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-router.post('/auth/totp', authenticateMiddleware, async (req, res) => {
+const totpSetupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 TOTP setup requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Слишком много попыток настройки 2FA, повторите позже',
+  },
+});
+
+router.post('/auth/totp', authenticateMiddleware, totpSetupLimiter, async (req, res) => {
   try {
     const userUuid = req.userUuid;
     const { confirmationCode } = req.body;
