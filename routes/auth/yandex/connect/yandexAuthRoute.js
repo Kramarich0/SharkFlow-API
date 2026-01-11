@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import axios from 'axios';
+import rateLimit from 'express-rate-limit';
 import { getRequestInfo } from '#utils/helpers/authHelpers.js';
 import { handleRouteError } from '#utils/handlers/handleRouteError.js';
 import { uploadAvatarAndUpdateUser } from '#utils/helpers/uploadAvatarAndUpdateUser.js';
@@ -22,7 +23,14 @@ import {
 
 const router = Router();
 
-router.post('/auth/oauth/yandex', async (req, res) => {
+const yandexOAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 Yandex OAuth requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/auth/oauth/yandex', yandexOAuthLimiter, async (req, res) => {
   const { ipAddress, userAgent } = getRequestInfo(req);
   const { code, state, captchaToken } = req.body;
   const guestUuid = req.cookies[GUEST_COOKIE_NAME];
