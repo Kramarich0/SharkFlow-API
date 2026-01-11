@@ -4012,7 +4012,7 @@ var hljs = (function () {
         },
         hljs.COMMENT(
           /<!--/,
-          /-->/,
+          /--!?>/,
           {
             relevance: 10
           }
