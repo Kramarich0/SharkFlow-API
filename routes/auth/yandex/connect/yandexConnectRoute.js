@@ -13,12 +13,21 @@ import {
   logYandexOAuthSuccess,
   logYandexOAuthFailure,
 } from '#utils/loggers/authLoggers.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
+
+const yandexConnectLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 Yandex connect requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 router.post(
   '/auth/oauth/yandex/connect',
   authenticateMiddleware,
+  yandexConnectLimiter,
   async (req, res) => {
     const { ipAddress, userAgent } = getRequestInfo(req);
     const userUuid = req.userUuid;
