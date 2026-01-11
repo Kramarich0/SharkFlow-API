@@ -5,7 +5,7 @@ import {
   getRequestInfo,
   setAuthCookies,
 } from '#utils/helpers/authHelpers.js';
-import { resetLoginAttempts } from '#utils/rateLimiters/authRateLimiters.js';
+import { resetLoginAttempts, totpVerifyRateLimiter } from '#utils/rateLimiters/authRateLimiters.js';
 import { logLoginSuccess, logTotpVerifyAttempt } from '#utils/loggers/authLoggers.js';
 import { handleRouteError } from '#utils/handlers/handleRouteError.js';
 import { deleteUserTempData } from '#store/userTempData.js';
@@ -21,7 +21,7 @@ import {
 
 const router = Router();
 
-router.post('/auth/totp/verify', async (req, res) => {
+router.post('/auth/totp/verify', totpVerifyRateLimiter, async (req, res) => {
   const { totpCode, sessionKey } = req.body;
   const {ipAddress,userAgent} = getRequestInfo(req)
 
