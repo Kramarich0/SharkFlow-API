@@ -157,7 +157,16 @@ router.post('/auth/oauth/github', githubOAuthLimiter, async (req, res) => {
 
     if (githubUser.avatar_url) {
       const hasAvatar = Boolean(user.avatarUrl);
-      const isCloudinary = user.avatarUrl?.includes('res.cloudinary.com');
+      let isCloudinary = false;
+      if (hasAvatar && typeof user.avatarUrl === 'string') {
+        try {
+          const parsedUrl = new URL(user.avatarUrl);
+          // Only treat as Cloudinary if the hostname matches exactly
+          isCloudinary = parsedUrl.hostname === 'res.cloudinary.com';
+        } catch {
+          isCloudinary = false;
+        }
+      }
       if (!hasAvatar || !isCloudinary) {
         await uploadAvatarAndUpdateUser(
           user.id,
