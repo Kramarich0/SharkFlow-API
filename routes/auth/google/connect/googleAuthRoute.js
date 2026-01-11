@@ -154,7 +154,15 @@ router.post('/auth/oauth/google', googleOAuthRateLimiter, async (req, res) => {
 
     if (avatarUrl) {
       const hasAvatar = Boolean(user.avatarUrl);
-      const isCloud = user.avatarUrl?.includes('res.cloudinary.com');
+      let isCloud = false;
+      if (user.avatarUrl) {
+        try {
+          const parsedUrl = new URL(user.avatarUrl);
+          isCloud = parsedUrl.hostname === 'res.cloudinary.com';
+        } catch {
+          isCloud = false;
+        }
+      }
       if (!hasAvatar || !isCloud) {
         await uploadAvatarAndUpdateUser(
           user.id,
