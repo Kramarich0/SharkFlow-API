@@ -26,12 +26,18 @@ export const isValidUUID = (uuid) => {
 export const sanitizeInput = (input) => {
   if (typeof input !== 'string') return '';
 
-  return input
-    .trim()
-    .replace(/[<>]/g, '')
-    .replace(/\b(?:javascript|data|vbscript):/gi, '')
-    .replace(/on\w+=/gi, '')
-    .substring(0, 64);
+  let current = input.trim();
+  let previous;
+
+  do {
+    previous = current;
+    current = current
+      .replace(/[<>]/g, '')
+      .replace(/\b(?:javascript|data|vbscript):/gi, '')
+      .replace(/on\w+=/gi, '');
+  } while (current !== previous);
+
+  return current.substring(0, 64);
 };
 
 /**
