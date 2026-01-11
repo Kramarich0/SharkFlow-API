@@ -338,10 +338,16 @@ function BuildHtml(options) {
         })
 
         // Add the active class to the active tocLink.
+        var escapedId
+        if (typeof window !== 'undefined' && window.CSS && typeof window.CSS.escape === 'function') {
+            escapedId = window.CSS.escape(topHeader.id)
+        } else {
+            escapedId = topHeader.id.replace(/([\\ #;&,.+*~':"!^$[\]()=>|/@])/g, '\\$1')
+        }
         var activeTocLink = tocElement
             .querySelector('.' + options.linkClass +
                 '.node-name--' + topHeader.nodeName +
-                '[href="' + options.basePath + '#' + topHeader.id.replace(/([ #;&,.+*~':"!^$[\]()=>|/@])/g, '\\$1') + '"]')
+                '[href="' + options.basePath + '#' + escapedId + '"]')
         if (activeTocLink && activeTocLink.className.indexOf(options.activeLinkClass) === -1) {
             activeTocLink.className += SPACE_CHAR + options.activeLinkClass
         }
