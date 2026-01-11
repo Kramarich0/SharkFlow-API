@@ -8,15 +8,24 @@ import {
   logCronJobError,
 } from '#utils/loggers/systemLoggers.js';
 import { getRequestInfo } from '#utils/helpers/authHelpers.js';
+import rateLimit from 'express-rate-limit';
 
 const receiver = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
   nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY,
 });
 
+const deleteOldGuestsLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 1, // allow at most 1 request per window
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const router = Router();
 
 router.post(
+  deleteOldGuestsLimiter,
   '/cron/delete-old-guests',
   express.json({
     verify: (req, res, buf) => {
@@ -27,7 +36,7 @@ router.post(
     const signature = req.headers['upstash-signature'];
     const body = req.rawBody;
     const url = 'https://sharkflow-api.onrender.com/api/v1/cron/delete-old-guests';
-    
+
     const {ipAddress, userAgent} = getRequestInfo(req)
 
     if (!receiver.verify({ body, signature, url })) {
