@@ -29,7 +29,7 @@ export const sanitizeInput = (input) => {
   return input
     .trim()
     .replace(/[<>]/g, '')
-    .replace(/javascript:/gi, '')
+    .replace(/\b(?:javascript|data|vbscript):/gi, '')
     .replace(/on\w+=/gi, '')
     .substring(0, 64);
 };
