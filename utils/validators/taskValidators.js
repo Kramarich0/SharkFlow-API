@@ -3,6 +3,7 @@
  * @description Валидаторы для задач.
  */
 import { validateBooleanField, validateTitleField } from './commonValidators.js';
+import sanitizeHtml from 'sanitize-html';
 
 /**
  * Проверяет, является ли строка валидным UUID v4
@@ -26,12 +27,13 @@ export const isValidUUID = (uuid) => {
 export const sanitizeInput = (input) => {
   if (typeof input !== 'string') return '';
 
-  return input
-    .trim()
-    .replace(/[<>]/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+=/gi, '')
-    .substring(0, 64);
+  const trimmed = input.trim();
+  const sanitized = sanitizeHtml(trimmed, {
+    allowedTags: [],
+    allowedAttributes: {},
+  });
+
+  return sanitized.substring(0, 64);
 };
 
 /**
