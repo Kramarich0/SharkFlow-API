@@ -14,11 +14,20 @@ import {
   logGoogleOAuthConfirmSuccess,
   logGoogleOAuthConfirmFailure,
 } from '#utils/loggers/authLoggers.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
+const googleConfirmConnectLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 confirmation attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post(
   '/auth/oauth/google/confirm-connect',
+  googleConfirmConnectLimiter,
   authenticateMiddleware,
   validateMiddleware(emailConfirmValidate),
   async (req, res) => {
