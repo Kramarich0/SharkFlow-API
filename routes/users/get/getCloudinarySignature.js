@@ -41,8 +41,8 @@ router.get(
       .join('&');
 
     const signature = crypto
-      .createHash('sha1')
-      .update(toSign + api_secret)
+      .createHmac('sha256', api_secret)
+      .update(toSign)
       .digest('hex');
 
     logCloudinarySignatureSuccess(userUuid, ip);
