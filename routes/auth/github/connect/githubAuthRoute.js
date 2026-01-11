@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import axios from 'axios';
+import rateLimit from 'express-rate-limit';
 import { getRequestInfo } from '#utils/helpers/authHelpers.js';
 import { handleRouteError } from '#utils/handlers/handleRouteError.js';
 import { uploadAvatarAndUpdateUser } from '#utils/helpers/uploadAvatarAndUpdateUser.js';
@@ -22,7 +23,17 @@ import {
 
 const router = Router();
 
-router.post('/auth/oauth/github', async (req, res) => {
+const githubOAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 GitHub OAuth requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Слишком много попыток входа через GitHub. Попробуйте позже.',
+  },
+});
+
+router.post('/auth/oauth/github', githubOAuthLimiter, async (req, res) => {
   const { ipAddress, userAgent } = getRequestInfo(req);
   const { code, state, captchaToken } = req.body;
   const guestUuid = req.cookies[GUEST_COOKIE_NAME];
