@@ -61,7 +61,7 @@
     "speakeasy": "^2.0.0",
     "telegraf": "^4.16.3",
     "telegraf-inline-menu": "^6.3.0",
-    "tinymce": "^8.0.0",
+    "tinymce": "^8.0.1",
     "transliteration": "^2.3.5",
     "ua-parser-js": "^2.0.4",
     "uuid": "^11.1.0",
