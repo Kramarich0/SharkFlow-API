@@ -17,6 +17,9 @@
   "lint-staged": {
     "*.{js,ts}": "eslint --fix"
   },
+  "overrides": {
+    "handlebars": ">=4.7.9"
+  }
   "dependencies": {
     "@adminjs/design-system": "^4.0.5",
     "@adminjs/express": "^6.1.1",
