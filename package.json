@@ -18,7 +18,7 @@
     "*.{js,ts}": "eslint --fix"
   },
   "overrides": {
-    "handlebars": ">=4.7.9"
+    "handlebars": ">=4.7.9",
     "axios": ">=1.15.0"
   }
   "dependencies": {
