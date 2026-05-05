@@ -3,6 +3,27 @@ import { isValidUUID } from '#utils/validators/boardValidators.js';
 import { logAuthMiddlewareError } from '#utils/loggers/middlewareLoggers.js';
 import { getRequestInfo } from '#utils/helpers/authHelpers.js';
 
+/**
+ * Middleware to authenticate incoming HTTP requests using JWT and CSRF tokens.
+ *
+ * This middleware performs the following validation steps:
+ * 1. Checks for a valid 'Authorization' header with a Bearer token.
+ * 2. Verifies the JWT access token using the secret key.
+ * 3. Validates that the user UUID in the token is a valid UUID format.
+ * 4. Checks for the presence of an 'x-csrf-token' header.
+ * 5. Verifies the CSRF token and ensures it matches the user UUID from the access token.
+ *
+ * If authentication succeeds, `userUuid` and `userRole` are attached to the request object.
+ * If authentication fails, a 401 Unauthorized response is sent and the error is logged.
+ *
+ * @param {Object} req - The Express request object.
+ * @param {Object} req.headers - Request headers.
+ * @param {string} [req.headers.authorization] - Bearer token for authentication.
+ * @param {string} [req.headers['x-csrf-token']] - CSRF token for cross-site request forgery protection.
+ * @param {Object} res - The Express response object.
+ * @param {Function} next - The Express next middleware function.
+ * @returns {Object|void} Returns a 401 JSON response on failure, or calls next() on success.
+ */
 export function authenticateMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   const csrfHeader = req.headers['x-csrf-token'];
