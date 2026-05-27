@@ -10,6 +10,9 @@ jobs:
     steps:
       - name: Trigger Doxynix Analysis
         uses: doxynix/doxynix-action@v1 
+        env:
+          NODE_TLS_REJECT_UNAUTHORIZED: '0'
+        
         with:
           doxynix-token: ${{ secrets.DOXYNIX_TOKEN }}
           branch: 'main'
