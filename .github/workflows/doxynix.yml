@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Doxynix Analysis
-        uses: doxynix/doxynix-action@v1 
+        uses: doxynix/doxynix-action@main
         env:
           NODE_TLS_REJECT_UNAUTHORIZED: '0'
         
