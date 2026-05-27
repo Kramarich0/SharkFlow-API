@@ -1,0 +1,15 @@
+name: Doxynix Documentation Sync
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Doxynix Analysis
+        uses: doxynix/doxynix-action@v1 
+        with:
+          doxynix-token: ${{ secrets.DOXYNIX_TOKEN }}
+          branch: 'main'
