@@ -49,11 +49,18 @@ router.post(
     const { ipAddress, userAgent } = getRequestInfo(req);
     const { user, captchaToken } = req.validatedBody;
     const { email, password, rememberMe } = user;
+
     const deviceId = validateDeviceId(req, res);
-    if (!deviceId) return;
+
+    if (!deviceId) {
+      return res.status(400).json({
+        error: 'Invalid device',
+      });
+    }
 
     logLoginAttempt(email, ipAddress, userAgent);
 
+    // TODO: временно отключено для локальной разработки
     // if (process.env.NODE_ENV === 'production') {
     //   if (!captchaToken) {
     //     return res
@@ -69,6 +76,7 @@ router.post(
     //       ipAddress,
     //       turnstileUuid,
     //     );
+
     //     if (!captchaSuccess) {
     //       return res
     //         .status(400)
@@ -80,13 +88,21 @@ router.post(
     // }
 
     const normalizedEmail =
-      typeof email === 'string' ? normalizeEmail(email) : null;
+      typeof email === 'string'
+        ? normalizeEmail(email)
+        : null;
 
     if (!normalizedEmail) {
-      return res.status(400).json({ error: 'Некорректный email' });
+      return res.status(400).json({
+        error: 'Некорректный email',
+      });
     }
 
-    const rateLimitCheck = checkLoginRateLimit(ipAddress, normalizedEmail);
+    const rateLimitCheck = checkLoginRateLimit(
+      ipAddress,
+      normalizedEmail,
+    );
+
     if (rateLimitCheck.blocked) {
       return res.status(429).json({
         error: `Слишком много попыток входа. Попробуйте через ${rateLimitCheck.timeLeft} минут`,
@@ -95,25 +111,36 @@ router.post(
 
     const geoLocation = await getGeoLocation(ipAddress);
 
-    const deletedUser = await findUserByEmail(normalizedEmail, true, {
-      id: true,
-      uuid: true,
-      password: true,
-      login: true,
-      email: true,
-      role: true,
-      twoFactorEnabled: true,
-      isDeleted: true,
-      avatarUrl: true,
-    });
+    const deletedUser = await findUserByEmail(
+      normalizedEmail,
+      true,
+      {
+        id: true,
+        uuid: true,
+        password: true,
+        login: true,
+        email: true,
+        role: true,
+        twoFactorEnabled: true,
+        isDeleted: true,
+        avatarUrl: true,
+      },
+    );
 
+    // Восстановление удалённого аккаунта
     if (deletedUser && deletedUser.isDeleted) {
       if (!(await bcrypt.compare(password, deletedUser.password))) {
         incrementLoginAttempts(ipAddress, normalizedEmail);
-        return res.status(401).json({ error: 'Неправильный email или пароль' });
+
+        return res.status(401).json({
+          error: 'Неправильный email или пароль',
+        });
       }
+
       const maskedEmail = maskEmail(deletedUser.email);
+
       const restoreKey = generateUUID();
+
       await setUserTempData('restoreUser', restoreKey, {
         userUuid: deletedUser.uuid,
       });
@@ -128,29 +155,41 @@ router.post(
     }
 
     try {
-      const user = await findUserByEmail(normalizedEmail, false, {
-        id: true,
-        uuid: true,
-        password: true,
-        login: true,
-        email: true,
-        role: true,
-        twoFactorEnabled: true,
-      });
+      const user = await findUserByEmail(
+        normalizedEmail,
+        false,
+        {
+          id: true,
+          uuid: true,
+          password: true,
+          login: true,
+          email: true,
+          role: true,
+          twoFactorEnabled: true,
+        },
+      );
 
       if (!user || !user.password) {
         incrementLoginAttempts(ipAddress, normalizedEmail);
-        return res.status(401).json({ error: 'Неправильный email или пароль' });
+
+        return res.status(401).json({
+          error: 'Пользователь не найден',
+        });
       }
 
       if (!(await bcrypt.compare(password, user.password))) {
         incrementLoginAttempts(ipAddress, normalizedEmail);
+
         logLoginFailure(normalizedEmail, ipAddress);
-        return res.status(401).json({ error: 'Неправильный email или пароль' });
+
+        return res.status(401).json({
+          error: 'Неверный пароль',
+        });
       }
 
       if (user.twoFactorEnabled) {
         const sessionKey = generateUUID();
+
         await setUserTempData('twoFactorAuth', sessionKey, {
           uuid: user.uuid,
           twoFactorEnabled: user.twoFactorEnabled,
@@ -159,6 +198,7 @@ router.post(
           userAgent,
           timestamp: Date.now(),
         });
+
         return res.status(200).json({
           twoFactorEnabled: user.twoFactorEnabled,
           sessionKey,
@@ -169,24 +209,40 @@ router.post(
 
       resetLoginAttempts(ipAddress, normalizedEmail);
 
-      const deviceSession = await createOrUpdateDeviceSession({
-        userId: user.id,
-        deviceId,
-        userAgent,
+      const deviceSession =
+        await createOrUpdateDeviceSession({
+          userId: user.id,
+          deviceId,
+          userAgent,
+          ipAddress,
+          referrer: req.get('Referer') || null,
+          geoLocation,
+        });
+
+      // create tokens
+      const tokengs = await createAuthTokens(
+        user,
+        rememberMe,
+        deviceSession.id,
+      );
+
+      setAuthCookies(
+        res,
+        tokens.refreshToken,
+        rememberMe,
+      );
+
+      logLoginSuccess(
+        normalizedEmail,
+        user.uuid,
         ipAddress,
-        referrer: req.get('Referer') || null,
-        geoLocation,
-      });
+      );
 
-      const tokengs = await createAuthTokens(user, rememberMe, deviceSession.id);
-
-      setAuthCookies(res, tokens.refreshToken, rememberMe);
-
-      logLoginSuccess(normalizedEmail, user.uuid, ipAddress);
-
-      const githubOAuthEnabled = user
-        ? await getUserOAuthEnabledByUserId(user.id, 'github')
-        : false;
+      const githubOAuthEnabled =
+        await getUserOAuthEnabledByUserId(
+          user.id,
+          'github',
+        );
 
       return res.status(200).json({
         accessToken: tokens.accessToken,
@@ -195,7 +251,18 @@ router.post(
         githubOAuthEnabled,
       });
     } catch (error) {
-      incrementLoginAttempts(ipAddress, normalizedEmail);
+      incrementLoginAttempts(
+        ipAddress,
+        normalizedEmail,
+      );
+
+      console.error('LOGIN ERROR', {
+        email: normalizedEmail,
+        ipAddress,
+        userAgent,
+        error,
+      });
+
       handleRouteError(res, error, {
         message: 'Ошибка при логине. Попробуйте позже',
         status: 500,
