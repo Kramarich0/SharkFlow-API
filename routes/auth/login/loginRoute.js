@@ -178,7 +178,7 @@ router.post(
         geoLocation,
       });
 
-      const tokens = await createAuthTokens(user, rememberMe, deviceSession.id);
+      const tokengs = await createAuthTokens(user, rememberMe, deviceSession.id);
 
       setAuthCookies(res, tokens.refreshToken, rememberMe);
 
