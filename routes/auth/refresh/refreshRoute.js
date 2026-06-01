@@ -26,7 +26,7 @@ const router = Router();
 router.post('/auth/refresh', async (req, res) => {
   const refreshToken = req.cookies[REFRESH_COOKIE_NAME];
   const { ipAddress, userAgent } = getRequestInfo(req);
-
+const deviceId = req.headers['x-device-id'];
   const deviceId = req.headers['x-device-id'] || req.ip;
 
   let userUuidForLog = null;
