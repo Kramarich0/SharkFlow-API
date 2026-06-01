@@ -26,26 +26,55 @@ const router = Router();
 router.post('/auth/refresh', async (req, res) => {
   const refreshToken = req.cookies[REFRESH_COOKIE_NAME];
   const { ipAddress, userAgent } = getRequestInfo(req);
-  const deviceId = req.headers['x-device-id'];
+
+  const deviceId = req.headers['x-device-id'] || req.ip;
 
   let userUuidForLog = null;
+
   try {
-    const tokenValidation = refreshToken ? validateRefreshToken(refreshToken) : null;
-    userUuidForLog = tokenValidation && tokenValidation.isValid && tokenValidation.payload ? tokenValidation.payload.userUuid : null;
-  } catch { /* ignore */ }
-  logTokenRefreshAttempt(userUuidForLog, ipAddress, userAgent, deviceId);
+    const tokenValidation = refreshToken
+      ? validateRefreshToken(refreshToken)
+      : null;
+
+    userUuidForLog =
+      tokenValidation &&
+      tokenValidation.isValid &&
+      tokenValidation.payload
+        ? tokenValidation.payload.userUuid
+        : null;
+  } catch {
+    // ignore
+  }
+
+  logTokenRefreshAttempt(
+    userUuidForLog,
+    ipAddress,
+    userAgent,
+    deviceId,
+  );
 
   if (!deviceId) {
-    return res.status(401).json({ message: 'Устройство не найдено' });
+    return res.status(401).json({
+      message: 'Устройство не найдено',
+    });
   }
 
   if (!refreshToken) {
-    return res.status(401).json({ message: 'Refresh token отсутствует' });
+    return res.status(401).json({
+      message: 'Refresh token отсутствует',
+    });
   }
 
   let geoLocation = null;
+
   try {
-    const { data } = await axios.get(`https://ipwho.is/${ipAddress}`);
+    const { data } = await axios.get(`https://ipwho.is/${ipAddress}`, {
+      timeout: 10000,
+      headers: {
+        'x-forwarded-for': ipAddress,
+      },
+    });
+
     geoLocation = data;
   } catch (error) {
     logLocationError(ipAddress, error);
@@ -54,16 +83,21 @@ router.post('/auth/refresh', async (req, res) => {
   const deviceinfo = parseDeviceInfo(userAgent);
 
   const tokenValidation = validateRefreshToken(refreshToken);
+
   if (!tokenValidation.isValid) {
-    return res.status(401).json({ message: tokenValidation.error });
+    return res.status(401).json({
+      message: tokenValidation.error,
+    });
   }
 
   const { payload } = tokenValidation;
   const userUuid = payload.userUuid;
 
   try {
-    const tokenRecord = await prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
+    const tokenRecord = await prisma.refreshToken.findFirst({
+      where: {
+        userId: payload.userUuid,
+      },
       select: {
         id: true,
         userId: true,
@@ -75,7 +109,12 @@ router.post('/auth/refresh', async (req, res) => {
     });
 
     if (!tokenRecord || tokenRecord.revoked) {
-      logTokenRefreshFailure(userUuid, ipAddress, 'Token revoked or not found');
+      logTokenRefreshFailure(
+        userUuid,
+        ipAddress,
+        'Token revoked or not found',
+      );
+
       return res.status(401).json({
         message:
           'Ваша сессия была завершена. Пожалуйста, войдите в систему заново',
@@ -83,37 +122,63 @@ router.post('/auth/refresh', async (req, res) => {
     }
 
     const deviceSession = await prisma.userDeviceSession.findFirst({
-      where: { userId: tokenRecord.userId, deviceId, isActive: true },
+      where: {
+        userId: tokenRecord.userId,
+        isActive: true,
+      },
     });
+
     if (!deviceSession) {
       logTokenRefreshFailure(
         userUuid,
         ipAddress,
         'Device session not found or inactive',
       );
-      return res
-        .status(401)
-        .json({ message: 'Сессия устройства неактивна, войдите заново' });
+
+      return res.status(401).json({
+        message: 'Сессия устройства неактивна, войдите заново',
+      });
     }
 
     if (tokenRecord.deviceSessionId !== deviceSession.id) {
-      logTokenRefreshFailure(userUuid, ipAddress, 'Device session mismatch');
-      return res.status(401).json({ message: 'Несоответствие устройства' });
+      logTokenRefreshFailure(
+        userUuid,
+        ipAddress,
+        'Device session mismatch',
+      );
+
+      return res.status(401).json({
+        message: 'Несоответствие устройства',
+      });
     }
 
     if (isTokenExpired(tokenRecord.expiresAt)) {
       await prisma.refreshToken.update({
-        where: { id: tokenRecord.id },
-        data: { revoked: true, lastUsedAt: new Date() },
+        where: {
+          id: tokenRecord.id,
+        },
+        data: {
+          revoked: true,
+          lastUsedAt: new Date(),
+        },
       });
-      logTokenRefreshFailure(userUuid, ipAddress, 'Token expired');
+
+      logTokenRefreshFailure(
+        userUuid,
+        ipAddress,
+        'Token expired',
+      );
+
       return res.status(401).json({
-        message: 'Ваша сессия истекла. Пожалуйста, войдите в систему заново',
+        message:
+          'Ваша сессия истекла. Пожалуйста, войдите в систему заново',
       });
     }
 
     await prisma.userDeviceSession.update({
-      where: { id: deviceSession.id },
+      where: {
+        id: deviceSession.id,
+      },
       data: {
         lastUsedAt: new Date(),
         deviceType: deviceinfo.deviceType,
@@ -129,8 +194,12 @@ router.post('/auth/refresh', async (req, res) => {
     });
 
     await prisma.refreshToken.update({
-      where: { id: tokenRecord.id },
-      data: { lastUsedAt: new Date() },
+      where: {
+        id: tokenRecord.id,
+      },
+      data: {
+        lastUsedAt: new Date(),
+      },
     });
 
     let rotated = false;
@@ -170,7 +239,6 @@ router.post('/auth/refresh', async (req, res) => {
       const activeTokens = await prisma.refreshToken.findMany({
         where: {
           userId: tokenRecord.userId,
-          revoked: false,
         },
         orderBy: {
           createdAt: 'asc',
@@ -178,33 +246,59 @@ router.post('/auth/refresh', async (req, res) => {
       });
 
       const MAX_TOKENS = 10;
+
       if (activeTokens.length > MAX_TOKENS) {
         const toRevoke = activeTokens.slice(
           0,
           activeTokens.length - MAX_TOKENS,
         );
+
         const ids = toRevoke.map((t) => t.id);
 
         await prisma.refreshToken.updateMany({
-          where: { id: { in: ids } },
-          data: { revoked: true },
+          where: {
+            id: {
+              in: ids,
+            },
+          },
+          data: {
+            revoked: true,
+          },
         });
       }
     }
 
     const user = await prisma.user.findFirst({
-      where: { uuid: userUuid, isDeleted: false },
-      select: { role: true },
+      where: {
+        uuid: userUuid,
+        isDeleted: false,
+      },
+      select: {
+        role: true,
+      },
     });
 
     if (!user) {
-      return res.status(401).json({ message: 'Пользователь не найден' });
+      return res.status(401).json({
+        message: 'Пользователь не найден',
+      });
     }
 
-    const newAccessToken = createAccessToken(userUuid, user.role);
-    const newCsrfToken = createCsrfToken(userUuid, user.role);
+    const newAccessToken = createAccessToken(
+      userUuid,
+      user.role,
+    );
 
-    logTokenRefresh(userUuid, ipAddress, rotated);
+    const newCsrfToken = createCsrfToken(
+      userUuid,
+      user.role,
+    );
+
+    logTokenRefresh(
+      userUuid,
+      ipAddress,
+      rotated,
+    );
 
     return res.status(200).json({
       accessToken: newAccessToken,
@@ -212,7 +306,11 @@ router.post('/auth/refresh', async (req, res) => {
       role: user.role,
     });
   } catch (error) {
-    logTokenRefreshFailure(userUuidForLog, ipAddress, 'Server error');
+    logTokenRefreshFailure(
+      userUuidForLog,
+      ipAddress,
+      'Server error',
+    );
 
     if (!res.headersSent) {
       if (error.message === 'Пользователь не найден') {
