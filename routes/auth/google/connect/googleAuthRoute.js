@@ -31,6 +31,10 @@ const oauth2Client = new OAuth2Client(
   'postmessage',
 );
 
+/**
+ * Rate limiter for Google OAuth requests to prevent abuse.
+ * Limits to 20 requests per 15 minutes per IP.
+ */
 const googleOAuthRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // limit each IP to 20 Google OAuth requests per window
@@ -41,6 +45,14 @@ const googleOAuthRateLimiter = rateLimit({
   },
 });
 
+/**
+ * POST /auth/oauth/google
+ * Authenticates a user via Google OAuth2.
+ * 
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {Promise<void>} Sends JSON response with access/CSRF tokens or an error message.
+ */
 router.post('/auth/oauth/google', googleOAuthRateLimiter, async (req, res) => {
   const { ipAddress, userAgent } = getRequestInfo(req);
   const { code, captchaToken } = req.body;
