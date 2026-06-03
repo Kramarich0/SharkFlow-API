@@ -54,7 +54,7 @@ app.use(hpp());
 app.use(corsMiddleware);
 
 app.use(compression());
-app.use(cookieParser());
+app.use(cookieParser);
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
@@ -84,7 +84,7 @@ routes.forEach(({ path, router }) => {
 
 logInfo('System', 'routesLoaded', `Routes loaded: ${routes.length}`);
 
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   logDatabaseError('unhandledError', err);
   const status = err.status || 500;
   return res.status(status).json({
