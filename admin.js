@@ -45,6 +45,15 @@ const adminJs = new AdminJS({
   },
 });
 
+/**
+ * Authenticates an administrator against the Prisma database.
+ * 
+ * @param {Object} credentials - The credentials provided for login.
+ * @param {string} credentials.email - The administrator's email address.
+ * @param {string} credentials.password - The raw password string.
+ * @param {Object} ctx - The AdminJS context object containing the request.
+ * @returns {Promise<Object|null>} Returns the user object if authenticated, or null if access is denied or an error occurs.
+ */
 const authenticate = async ({ email, password }, ctx) => {
   const req = ctx?.req;
   const { ipAddress, userAgent } = getRequestInfo(req);

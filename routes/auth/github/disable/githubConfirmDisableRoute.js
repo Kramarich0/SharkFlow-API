@@ -12,6 +12,10 @@ import { findUserByUuidOrThrow } from '#utils/helpers/userHelpers.js';
 
 const router = Router();
 
+/**
+ * POST route to initiate the GitHub account disabling process by sending a confirmation code.
+ * Requires authentication via authenticateMiddleware.
+ */
 router.post(
   '/auth/github/confirm-disable',
   authenticateMiddleware,

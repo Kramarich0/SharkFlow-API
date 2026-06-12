@@ -13,6 +13,13 @@ import { REFRESH_COOKIE_NAME } from '#config/cookiesConfig.js';
 
 const router = Router();
 
+/**
+ * POST route to terminate all active refresh token sessions and device sessions for the authenticated user.
+ * 
+ * @param {import('express').Request} req - The Express request object containing user authentication context and cookies.
+ * @param {import('express').Response} res - The Express response object used to clear cookies and send the response.
+ * @returns {Promise<void>} Resolves when the operation is complete or an error is handled.
+ */
 router.post('/auth/logout/all', authenticateMiddleware, async (req, res) => {
   const refreshToken = req.cookies[REFRESH_COOKIE_NAME];
   const userUuid = req.userUuid;

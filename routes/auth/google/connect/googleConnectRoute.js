@@ -31,6 +31,15 @@ const googleConnectRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * Handles the POST request to connect a Google account to the currently authenticated user.
+ * Performs OAuth token exchange, validates Google identity, checks for existing connections,
+ * and optionally initiates email verification if the Google email differs from the account email.
+ * 
+ * @param {import('express').Request} req - Express request object containing the authorization code in the body and user info from middleware.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {Promise<void>} Sends a JSON response with status 200 for success, or error details.
+ */
 router.post(
   '/auth/oauth/google/connect',
   googleConnectRateLimiter,

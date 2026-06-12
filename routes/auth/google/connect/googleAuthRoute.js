@@ -24,13 +24,22 @@ import {
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
+  /**
+   * Express router for handling Google OAuth authentication.
+   */
+  const router = Router();
+  /**
+   * OAuth2 client instance for Google authentication.
+   */
+  const oauth2Client = new OAuth2Client(
+    process.env.CLIENT_GOOGLE_ID,
+    process.env.CLIENT_GOOGLE_SECRET,
+    'postmessage',
+  );
 
-const oauth2Client = new OAuth2Client(
-  process.env.CLIENT_GOOGLE_ID,
-  process.env.CLIENT_GOOGLE_SECRET,
-  'postmessage',
-);
-
+/**
+ * Rate limiter specifically for Google OAuth endpoints to prevent brute-force attacks.
+ */
 const googleOAuthRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // limit each IP to 20 Google OAuth requests per window
@@ -41,6 +50,16 @@ const googleOAuthRateLimiter = rateLimit({
   },
 });
 
+/**
+ * POST /auth/oauth/google
+ * Handles the Google OAuth authentication flow, including captcha verification, 
+ * user lookup/creation, avatar synchronization, and session establishment.
+ * 
+ * @param {import('express').Request} req - The Express request object containing the authorization code and captcha token.
+ * @param {import('express').Response} res - The Express response object.
+ * @returns {Promise<void>} Returns a JSON response containing access and CSRF tokens upon success.
+ * @throws {Error} Logs and handles errors internally via handleRouteError.
+ */
 router.post('/auth/oauth/google', googleOAuthRateLimiter, async (req, res) => {
   const { ipAddress, userAgent } = getRequestInfo(req);
   const { code, captchaToken } = req.body;
