@@ -1,124 +1,63 @@
-# SharkFlow API
+# System Identity & Onboarding Blueprint
 
-SharkFlow API — серверная часть системы управления задачами и досками.
+## Executive Summary
+The system is a high-availability API backend (SharkFlow API) designed for task management and team collaboration. It leverages [[app.js]] as the core Express entrypoint, backed by a PostgreSQL database managed via Prisma ORM and a Redis instance for session state, rate limiting, and caching. The platform provides secure authentication (OAuth2, TOTP), real-time task board management, and integration with a Telegram bot for asynchronous task operations.
 
----
+## Primary Entrypoints
+*   [[app.js]]: The primary Express application bootstrap. Start here to understand the middleware chain, route mounting, and security configurations.
+*   [[server.js]]: The HTTP server entrypoint. This initializes the server runtime and integrates the WebSocket layer.
+*   [[socket/index.js]]: The entrypoint for WebSocket communication, essential for understanding real-time data synchronization.
 
-![GitHub license](https://img.shields.io/github/license/kramarich000/SharkFlow-API)
-![Node.js CI](https://img.shields.io/github/actions/workflow/status/kramarich000/SharkFlow-API/node.js.yml?branch=main)
+## Knowledge Holders & Ownership Risks
+*   **Ownership Status:** Unknown.
+*   **Risk Analysis:** The repository exhibits a high bus-factor risk as key authentication and session management logic reside in highly complex, high-churn modules such as [[utils/helpers/authHelpers.js]] and [[routes/auth/login/loginRoute.js]]. Early inspection of these modules is strongly recommended for any architectural audit.
 
----
+## Quick Start, Setup & Verification
+### Prerequisites
+*   Node.js (LTS version)
+*   PostgreSQL instance
+*   Redis instance
 
-## 🚦 Быстрый старт
+### Environment Configuration
+Create a local `.env` file based on [[.env.example]]. Ensure the following critical variables are set:
+*   `DATABASE_URL`: Connection string for your PostgreSQL instance.
+*   `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN`: Credentials for Redis connectivity.
+*   `TELEGRAM_BOT_TOKEN`: Required for bot functionality.
 
+### Setup Instructions
+1. Install dependencies:
+   ```bash title="package.json"
+   npm install
+   ```
+2. Generate Prisma client:
+   ```bash title="package.json"
+   npm run prisma:generate
+   ```
+3. Start the development environment:
+   ```bash title="package.json"
+   npm run dev
+   ```
+
+### Smoke Test / Verification
+Verify the local build by querying the monitoring endpoint:
 ```bash
-# Клонируйте репозиторий
-git clone https://github.com/kramarich000/SharkFlow-API.git
-cd SharkFlow-API
-
-# Установите зависимости
-npm install
-
-# Настройте переменные окружения (.env)
-
-# Запустите сервер
-npm start
+curl -X GET http://localhost:3000/api/v1/monitor
 ```
+> [!NOTE]
+> Ensure your `API_PREFIX` in `.env` matches the path used in the curl command. The expected response is `{"status":"ok"}`.
 
----
+## Operating Model & Next Steps
+The system operates as a stateful Express application relying on Redis for ephemeral data (e.g., confirmation codes, temporary registration data) and PostgreSQL for persistent domain state.
 
----
+### Core Runtimes
+*   **HTTP Layer:** Standard RESTful operations protected by `corsMiddleware` and `limiterMiddleware`.
+*   **WebSocket Layer:** Real-time events managed in [[socket/handlers.js]].
+*   **Background Tasks:** Cron jobs for maintenance tasks like guest account cleanup, managed in [[routes/cron/deleteOldGuestsRoute.js]].
 
-## 🤝 Contributing
+### Recommended Documentation Review
+1. Review [[prisma/schema.prisma]] to understand the data model relationships.
+2. Examine [[utils/routesLoader/loadRoutes.js]] to understand how the API surface is dynamically constructed.
+3. Consult the JSDoc generated documentation in [[docs/jsdoc-docolatte/]] for detailed function-level specifications.
 
-Будем рады вашим PR и идеям! Перед отправкой изменений ознакомьтесь с CONTRIBUTING.md или откройте Issue для обсуждения.
-
----
-
-## ❓ FAQ
-
-- **Почему не запускается проект?**  
-  Проверьте, что установлены все зависимости и корректно настроен файл .env.
-
-- **Как сменить базу данных?**  
-  Измените параметры подключения в .env и пересоздайте миграции через Prisma.
-
-- **Где посмотреть примеры работы с API?**  
-  В разделе "Документация" есть ссылка на JSDoc, а также (по возможности) на коллекцию Postman.
-
----
-
-## 🚀 Технологический стек
-
-- **Node.js** (ESM)
-- **Express 5** — основной HTTP-фреймворк
-- **Prisma ORM** — работа с базой данных
-- **PostgreSQL** (или другая поддерживаемая Prisma)
-- **Socket.IO** — WebSocket-реализация для real-time
-- **Telegraf** — интеграция с Telegram Bot API
-- **JWT** — аутентификация и авторизация
-- **bcrypt** — хэширование паролей
-- **Yup, express-validator** — валидация данных
-- **Winston, winston-loki** — логирование
-- **Cloudinary** — хранение и обработка изображений
-- **Nodemailer, resend** — email-рассылки
-- **dotenv, dotenv-flow** — управление переменными окружения
-- **helmet, xss-clean, hpp, cors** — безопасность
-- **node-cron** — задачи по расписанию
-- **passport, passport-google-oauth20** — OAuth2
-- **@upstash/redis, @upstash/qstash** — кэширование, очереди
-- **JSDoc** — автогенерация документации
-
----
-
-## 📖 Документация
-
-Документация по API доступна онлайн:
-👉 [SharkFlow API — документация по исходному коду](https://kramarich000.github.io/SharkFlow-API/docs)
-👉 [SharkFlow API — документация по REST API (Postman](https://documenter.getpostman.com/view/44119218/2sB34eHMF8)
-
-В проекте реализована автоматическая генерация документации по исходному коду с помощью JSDoc. Документация доступна в нескольких стилях (темах).
-
-### 📂 Где расположена документация?
-- Все сгенерированные версии документации находятся в папке [`docs/`](./docs/):
-  - `docs/jsdoc-clean/` — clean-jsdoc-theme
-  - `docs/jsdoc-docdash/` — docdash
-  - `docs/jsdoc-docolatte/` — docolatte
-  - `docs/jsdoc-default/` — стандартная тема JSDoc
-- Конфигурационные файлы и скрипты для генерации — в [`jsdoc-configs/`](./jsdoc-configs/)
-
----
-
-## 🏗 Архитектура и особенности
-- Модульная структура: разделение на utils, routes, middlewares, store, telegramBot и др.
-- Поддержка REST API и WebSocket (Socket.IO)
-- Интеграция с внешними сервисами (Cloudinary, Telegram, Email, etc.)
-- Гибкая система логирования и мониторинга
-- Безопасность: защита от XSS, CSRF, brute-force, rate limiting
-- Поддержка OAuth2, JWT, сессий, двухфакторной аутентификации
-- Расширяемость: легко добавлять новые модули, middlewares, сервисы
-
----
-
-## 📂 Структура проекта (фрагмент)
-- `jsdoc-configs/` — конфиги и скрипты генерации документации
-- `docs/` — сгенерированная документация
-- `utils/`, `routes/`, `middlewares/`, `store/`, `telegramBot/` — исходный код API
-
----
-
-## 📬 Контакты и вклад
-- Вопросы, предложения и баги — через Issues или Pull Requests
-- Для связи с автором используйте email: karen.avakov2@gmail.com
-
----
-
-## 📝 Лицензия
-
-Этот проект распространяется под лицензией [ISC](./LICENSE).
-
-© 2025 Kramarich
-
----
-
-**Документация и исходный код SharkFlow API — профессиональный инструмент для современных команд.**
+> [!TIP]
+> Before modifying authentication logic, review [[utils/handlers/handleRouteError.js]] to ensure consistent error reporting across all routes.

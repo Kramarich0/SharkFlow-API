@@ -1,25 +1,18 @@
-import { Router } from 'express';
-import axios from 'axios';
-import rateLimit from 'express-rate-limit';
-import { getRequestInfo } from '#utils/helpers/authHelpers.js';
-import { handleRouteError } from '#utils/handlers/handleRouteError.js';
-import { uploadAvatarAndUpdateUser } from '#utils/helpers/uploadAvatarAndUpdateUser.js';
-import { generateUUID } from '#utils/generators/generateUUID.js';
-import { verifyTurnstileCaptcha } from '#utils/helpers/verifyTurnstileCaptchaHelper.js';
-import {
-  getGeoLocation,
-  validateDeviceId,
-} from '#utils/helpers/deviceSessionHelper.js';
-import { GUEST_COOKIE_NAME } from '#config/cookiesConfig.js';
-import { getGuestCookieOptions } from '#utils/cookie/guestCookie.js';
-import { findUserOAuth, getUserOAuthEnabledByUserId } from '#utils/helpers/userHelpers.js';
-import { findOrCreateUserWithOAuth } from '#utils/helpers/oauthHelpers.js';
-import { createUserSessionAndTokens } from '#utils/helpers/authSessionHelpers.js';
-import {
-  logGithubOAuthAttempt,
-  logGithubOAuthSuccess,
-  logGithubOAuthFailure,
-} from '#utils/loggers/authLoggers.js';
+  import { Router } from 'express';
+  import axios from 'axios';
+  import rateLimit from 'express-rate-limit';
+  import { getRequestInfo } from '#utils/helpers/authHelpers.js';
+  import { handleRouteError } from '#utils/handlers/handleRouteError.js';
+  import { uploadAvatarAndUpdateUser } from '#utils/helpers/uploadAvatarAndUpdateUser.js';
+  import { generateUUID } from '#utils/generators/generateUUID.js';
+  import { verifyTurnstileCaptcha } from '#utils/helpers/verifyTurnstileCaptchaHelper.js';
+  import { getGeoLocation, validateDeviceId } from '#utils/helpers/deviceSessionHelper.js';
+  import { GUEST_COOKIE_NAME } from '#config/cookiesConfig.js';
+  import { getGuestCookieOptions } from '#utils/cookie/guestCookie.js';
+  import { findUserOAuth, getUserOAuthEnabledByUserId } from '#utils/helpers/userHelpers.js';
+  import { findOrCreateUserWithOAuth } from '#utils/helpers/oauthHelpers.js';
+  import { createUserSessionAndTokens } from '#utils/helpers/authSessionHelpers.js';
+  import { logGithubOAuthAttempt, logGithubOAuthSuccess, logGithubOAuthFailure } from '#utils/loggers/authLoggers.js';
 
 const router = Router();
 
