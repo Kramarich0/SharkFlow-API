@@ -34,13 +34,23 @@ import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-const loginRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+  /**
+   * Rate limiter configuration for login attempts to prevent brute-force attacks.
+   */
+  const loginRateLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 100,
+      standardHeaders: true,
+      legacyHeaders: false,
+  });
 
+  /**
+   * POST handler for user authentication.
+   * 
+   * @param {import('express').Request} req - The HTTP request object, containing validated user credentials.
+   * @param {import('express').Response} res - The HTTP response object used to send back tokens or error messages.
+   */
+  router.post('/auth/login', loginRateLimiter, validateMiddleware(loginValidate), async (req, res) => {
 router.post(
   '/auth/login',
   loginRateLimiter,

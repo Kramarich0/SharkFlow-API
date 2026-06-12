@@ -11,11 +11,24 @@ import {
 import { findUserByUuidOrThrow } from '#utils/helpers/userHelpers.js';
 
 const router = Router();
+  /**
+   * Express router for handling Google authentication disable confirmation.
+   */
+  const router = Router();
 
-router.post(
-  '/auth/google/confirm-disable',
-  authenticateMiddleware,
-  async (req, res) => {
+  /**
+   * POST /auth/google/confirm-disable
+   * Authenticated route to initiate the process of disabling Google authentication.
+   * Sends a confirmation code to the user's registered email address.
+   * 
+   * @param {import('express').Request} req - Express request object containing user authentication context.
+   * @param {import('express').Response} res - Express response object.
+   * @returns {Promise<void>} Sends a 200 status on success or 400/500 on error.
+   */
+  router.post(
+    '/auth/google/confirm-disable',
+    authenticateMiddleware,
+    async (req, res) => {
     const userUuid = req.userUuid;
     const { ipAddress } = getRequestInfo(req);
 

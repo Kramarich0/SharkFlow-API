@@ -17,6 +17,10 @@ import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
+/**
+ * Rate limiter for GitHub account connection requests.
+ * Restricts clients to 10 requests per 15-minute window.
+ */
 const githubConnectRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // limit each IP to 10 GitHub connect requests per windowMs
@@ -24,6 +28,13 @@ const githubConnectRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * POST /auth/oauth/github/connect
+ * Connects a GitHub account to the authenticated user's profile.
+ * 
+ * @param {import('express').Request} req - Express request object containing OAuth code and authenticated user UUID.
+ * @param {import('express').Response} res - Express response object.
+ */
 router.post(
   '/auth/oauth/github/connect',
   authenticateMiddleware,

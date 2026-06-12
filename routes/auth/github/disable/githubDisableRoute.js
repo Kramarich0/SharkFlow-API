@@ -17,6 +17,10 @@ import { getUserOAuthEnabledByUserId } from '#utils/helpers/userHelpers.js';
 
 const router = Router();
 
+/**
+ * Configures the rate limiter for the GitHub OAuth disable route.
+ * Limits requests to 20 per 15-minute window per IP.
+ */
 const githubDisableRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // limit each IP to 20 disable requests per windowMs
@@ -24,6 +28,14 @@ const githubDisableRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * POST route to disable GitHub OAuth for the authenticated user.
+ * Requires a valid confirmation code via the request body.
+ * 
+ * @param {import('express').Request} req - The Express request object containing user authentication and confirmation code.
+ * @param {import('express').Response} res - The Express response object used to return the updated user status.
+ * @returns {Promise<void>} Sends a JSON response with user details and updated OAuth state, or an error object.
+ */
 router.post(
   '/auth/oauth/github/disable',
   githubDisableRateLimiter,

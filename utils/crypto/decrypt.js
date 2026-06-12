@@ -8,9 +8,11 @@ const ALGORITHM = 'aes-256-gcm';
 const KEY = Buffer.from(process.env.TOTP_ENC_KEY, 'hex');
 
 /**
- * Расшифровывает текст, зашифрованный с помощью AES-256-GCM
- * @param {string} data - Зашифрованный текст в формате iv:tag:encrypted
- * @returns {string} Расшифрованный текст
+ * Decrypts a ciphertext string encrypted with AES-256-GCM.
+ *
+ * @param {string} data - The encrypted string formatted as 'iv:tag:encrypted' in hexadecimal.
+ * @returns {string} The decrypted plaintext string.
+ * @throws {Error} Throws an error if decryption fails, such as authentication tag mismatch or invalid key/iv.
  */
 export function decrypt(data) {
   const [ivHex, tagHex, encryptedHex] = data.split(':');

@@ -16,6 +16,10 @@
 
 const router = Router();
 
+/**
+ * Rate limiter for GitHub OAuth requests.
+ * Limits each IP to 20 requests per 15-minute window.
+ */
 const githubOAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // limit each IP to 20 GitHub OAuth requests per windowMs
@@ -26,6 +30,14 @@ const githubOAuthLimiter = rateLimit({
   },
 });
 
+/**
+ * POST /auth/oauth/github
+ * Authenticates a user via GitHub OAuth flow.
+ * 
+ * @param {import('express').Request} req - Express request object containing code, state, and optional captchaToken.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {Promise<void>} Returns a JSON response with access tokens or an error message.
+ */
 router.post('/auth/oauth/github', githubOAuthLimiter, async (req, res) => {
   const { ipAddress, userAgent } = getRequestInfo(req);
   const { code, state, captchaToken } = req.body;

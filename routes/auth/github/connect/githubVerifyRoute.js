@@ -18,6 +18,10 @@ import {
 
 const router = Router();
 
+/**
+ * Rate limiter for Github connection confirmation requests.
+ * Allows 10 requests per 15 minutes per IP address.
+ */
 const githubConfirmConnectLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // limit each IP to 10 requests per windowMs for this endpoint
@@ -25,6 +29,14 @@ const githubConfirmConnectLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * POST /auth/oauth/github/confirm-connect
+ * Validates the confirmation code for connecting a GitHub account to the current user.
+ * 
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @returns {Promise<void>} Resolves with a success or error JSON response.
+ */
 router.post(
   '/auth/oauth/github/confirm-connect',
   githubConfirmConnectLimiter,

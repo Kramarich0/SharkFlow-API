@@ -24,16 +24,30 @@ import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-const guestLoginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 guest login requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: 'Слишком много попыток гостевого входа. Попробуйте позже.',
-  },
-});
+  /**
+   * Rate limiter configuration for guest login requests.
+   * Limits to 100 requests per 15 minutes per IP.
+   */
+  const guestLoginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 guest login requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      error: 'Слишком много попыток гостевого входа. Попробуйте позже.',
+    },
+  });
 
+  /**
+   * POST /auth/guest-login
+   * Handles guest authentication, including Turnstile CAPTCHA validation (in production),
+   * device session management, and guest user account creation if necessary.
+   * 
+   * @param {import('express').Request} req - Express request object.
+   * @param {import('express').Response} res - Express response object.
+   * @returns {Promise<void>} Sends JSON response with tokens and role or error status.
+   */
+  router.post('/auth/guest-login', guestLoginLimiter, async (req, res) => {
 router.post('/auth/guest-login', guestLoginLimiter, async (req, res) => {
   const { ipAddress, userAgent } = getRequestInfo(req);
 
