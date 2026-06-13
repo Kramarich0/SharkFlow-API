@@ -53,7 +53,7 @@ router.get('/users', authenticateMiddleware, async (req, res) => {
       ? true
       : await getUserOAuthEnabledByUserId(user.id, 'github');
 
-    res.setHeader(
+res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       'Cache-Control',
       'public, max-age=300'
     );
