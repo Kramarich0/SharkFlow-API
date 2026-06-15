@@ -1,6 +1,16 @@
 import express from 'express';
-import { adminRouter } from './admin.js';
 import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+import { adminRouter } from './admin.js';
+import corsMiddleware from './middlewares/http/corsMiddleware.js';
+import { limiterMiddleware } from './middlewares/http/limiterMiddleware.js';
+import loadRoutes, { joinPaths } from './utils/routesLoader/loadRoutes.js';
+import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
+import { logDatabaseError } from './utils/loggers/systemLoggers.js';
+import { logInfo } from './utils/loggers/baseLogger.js';
+import helmet from 'helmet';
+import hpp from 'hpp';
 
 const app = express();
 
@@ -15,16 +25,6 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use('/admin', adminRouter);
 
-import compression from 'compression';
-import corsMiddleware from './middlewares/http/corsMiddleware.js';
-import { limiterMiddleware } from './middlewares/http/limiterMiddleware.js';
-import loadRoutes, { joinPaths } from './utils/routesLoader/loadRoutes.js';
-
-import cookieParser from 'cookie-parser';
-import morgan from 'morgan';
-import { logDatabaseError } from './utils/loggers/systemLoggers.js';
-import { logInfo } from './utils/loggers/baseLogger.js';
-
 app.use(
   morgan('combined', {
     stream: {
@@ -32,9 +32,6 @@ app.use(
     },
   }),
 );
-
-import helmet from 'helmet';
-import hpp from 'hpp';
 
 app.use(helmet());
 app.use(
@@ -70,7 +67,7 @@ routes.forEach(({ path, router }) => {
   const fullPath = '/' + joinPaths(process.env.API_PREFIX, path); 
   app.use(fullPath, router);
 
-  if (router.stack) {
+  if (process.env.NODE_ENV !== 'production' && router.stack) {
     router.stack.forEach(layer => {
       if (layer.route) {
         const methods = Object.keys(layer.route.methods)
@@ -89,7 +86,6 @@ app.use((err, req, res, next) => {
   const status = err.status || 500;
   return res.status(status).json({
     error: err.message || 'Внутренняя ошибка сервера',
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
   });
 });
 
