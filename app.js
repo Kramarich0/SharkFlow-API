@@ -81,6 +81,14 @@ routes.forEach(({ path, router }) => {
 
 logInfo('System', 'routesLoaded', `Routes loaded: ${routes.length}`);
 
+/**
+ * Global error handling middleware.
+ * @param {Error} err - The caught error object.
+ * @param {import('express').Request} req - The Express request object.
+ * @param {import('express').Response} res - The Express response object.
+ * @param {import('express').NextFunction} next - The next middleware function.
+ * @returns {import('express').Response} A JSON response containing the error details.
+ */
 app.use((err, req, res, next) => {
   logDatabaseError('unhandledError', err);
   const status = err.status || 500;
@@ -89,6 +97,12 @@ app.use((err, req, res, next) => {
   });
 });
 
+/**
+ * 404 Not Found fallback middleware.
+ * @param {import('express').Request} req - The Express request object.
+ * @param {import('express').Response} res - The Express response object.
+ * @returns {import('express').Response} A JSON response indicating the resource was not found.
+ */
 app.use((req, res) => {
   return res.status(404).json({ error: 'Ресурс не найден' });
 });
