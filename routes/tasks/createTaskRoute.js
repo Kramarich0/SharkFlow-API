@@ -38,7 +38,7 @@ router.post(
     }
 
     const rawDueDate = req.body.dueDate?.trim() || null;
-    const rawdescription = req.body.description;
+    const rawDescription = req.body.description;
     const rawPriority = req.body.priority?.trim() || null;
     const rawStatus = req.body.status?.trim() || null;
 
@@ -58,7 +58,7 @@ router.post(
 
     try {
       const result = await prisma.$transaction(async (tx) => {
-        const taskCount = await getUserTaskCount(userUuid, tx);
+        const taskCount = await getUserTaskCount(userUuid, prisma);
         const MAX_TASKS_PER_USER = 500;
         if (taskCount >= MAX_TASKS_PER_USER) {
           throw new Error('LIMIT_REACHED');
@@ -70,7 +70,7 @@ router.post(
             dueDate,
             priority,
             status,
-            board: { connect: { uuid: boardUuid } },
+            board: { connect: { uuid: board.uuid } },
           },
           select: {
             uuid: true,
