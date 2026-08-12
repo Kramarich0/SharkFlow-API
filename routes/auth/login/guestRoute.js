@@ -24,34 +24,19 @@ import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-  /**
-   * Rate limiter configuration for guest login requests.
-   * Limits to 100 requests per 15 minutes per IP.
-   */
-  const guestLoginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 guest login requests per windowMs
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: {
-      error: 'Слишком много попыток гостевого входа. Попробуйте позже.',
-    },
-  });
+const guestLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Слишком много попыток гостевого входа. Попробуйте позже.',
+  },
+});
 
-  /**
-   * POST /auth/guest-login
-   * Handles guest authentication, including Turnstile CAPTCHA validation (in production),
-   * device session management, and guest user account creation if necessary.
-   * 
-   * @param {import('express').Request} req - Express request object.
-   * @param {import('express').Response} res - Express response object.
-   * @returns {Promise<void>} Sends JSON response with tokens and role or error status.
-   */
-  router.post('/auth/guest-login', guestLoginLimiter, async (req, res) => {
 router.post('/auth/guest-login', guestLoginLimiter, async (req, res) => {
   const { ipAddress, userAgent } = getRequestInfo(req);
 
-  // Логгируем попытку гостевого входа
   logGuestLoginAttempt(ipAddress, userAgent);
 
   if (process.env.NODE_ENV === 'production') {
@@ -96,7 +81,7 @@ router.post('/auth/guest-login', guestLoginLimiter, async (req, res) => {
           where: { userId: existingGuest.id, deviceId, isActive: true },
         });
         if (deviceSession) {
-          deviceSession = await prisma.userDeviceSession.update({
+          deviceSession = prisma.userDeviceSession.update({
             where: { id: deviceSession.id },
             data: {
               userAgent,
@@ -157,7 +142,7 @@ router.post('/auth/guest-login', guestLoginLimiter, async (req, res) => {
         });
         const deviceId = req.headers['x-device-id'];
         if (!deviceId) {
-          throw new Error('NO_DEVICE');
+          throw new Error('Устройство не найдено');
         }
         let deviceSession = await tx.userDeviceSession.findFirst({
           where: { userId: guest.id, deviceId, isActive: true },
@@ -187,9 +172,10 @@ router.post('/auth/guest-login', guestLoginLimiter, async (req, res) => {
         logRegistrationSuccess('guest', guest.id, ipAddress);
         return { guest, deviceSession };
       });
+
       const tokens = await createAuthTokens(guest, false, deviceSession.id);
       setAuthCookies(res, tokens.refreshToken, false);
-      res.cookie(GUEST_COOKIE_NAME, guest.uuid, getGuestCookieOptions());
+      res.cookie(GUEST_COOKIE_NAME, guest.id, getGuestCookieOptions());
       logLoginSuccess('guest', guest.uuid, ipAddress);
       return res.status(200).json({
         accessToken: tokens.accessToken,
